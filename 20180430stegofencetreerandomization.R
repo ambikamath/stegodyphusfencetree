@@ -1,5 +1,8 @@
 #Analysis to compare behavior and survival of Stegodyphus dumicola colonies 
 #On fences and trees, in field and in the greenhouse
+#load packages
+library(ggplot2)
+library(plyr)
 
 #load data
 #colony level metrics
@@ -25,11 +28,14 @@ for (i in 1:nrow(ghfusion)){
   ghfusion$Fused[i]=if (ghfusion$fused[i]=="0") {"No"} else {"Yes"}
 }
 
-#load packages
-library(ggplot2)
-library(plyr)
+#to add numerical colony size to field dataset, and calculate proportion of attackers. 
 
+for (i in 1:nrow(field)){
+  field$SizeNum[i]= if(field$ColonySize[i]=="Small") {30} else {90}
+}
 
+field$Propattack=field$NumAttack/field$SizeNum
+  
 #checking behavior pre-deployment
 #in the field data
 t.test(surv$AvgLatency~surv$Treatment, var.equal=TRUE)
@@ -49,49 +55,94 @@ t.test(ghpre2$num~ghpre2$Treatment, var.equal=TRUE)
 
 plot=ggplot(field)
 #Figure 2a
-plot+theme_classic(15)+geom_boxplot(aes(x=ColonySize, y=Latency, fill=Treatment))+
-  scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Colony Size")+ylab("Time to Attack (in s)")+
-  labs(fill="Spatial Context\nTreatment")
+jpeg("fig2a.jpg", res=300, width=2.5, height=2.5, units="in")
+plot+theme_light(10)+geom_boxplot(aes(x=Treatment, y=Latency, fill=Treatment))+
+  scale_fill_manual(values=c("#65BADA", "#82BA4F"), guide=FALSE)+xlab("Treatment")+ylab("Latency to Attack (in s)")+
+  annotate("text", x=1.5, y=180, label= "P = 0.004", size=2.5) 
+dev.off()
+#labs(fill="Spatial Context\nTreatment")
 #Figure 2b
-plot+theme_classic(15)+geom_boxplot(aes(x=ColonySize, y=NumAttack, fill=Treatment))+
-  scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Colony Size")+ylab("Number of Attackers")+
-  labs(fill="Spatial Context\nTreatment")
+jpeg("fig2b.jpg", res=300, width=2.5, height=2.5, units="in")
+plot+theme_light(10)+geom_boxplot(aes(x=Treatment, y=NumAttack, fill=Treatment))+
+  scale_fill_manual(values=c("#65BADA", "#82BA4F"), guide=FALSE)+xlab("Treatment")+ylab("Number of Attackers")+
+  annotate("text", x=1.5, y=26, label= "P < 0.0001", size=2.5) 
+dev.off()
+#labs(fill="Spatial Context\nTreatment")
 
 
 plot2=ggplot(surv)
 #Figure3a--Prey in web
-plot2+theme_classic(15)+geom_boxplot(aes(x=Treatment, y=PropDaysPrey, fill=Treatment))+theme(legend.position="NONE")+
-  scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Treatment")+ylab("Proportion of Days\nwith Prey in Capture Web")
+jpeg("fig3a.jpg", res=300, width=2.5, height=2.5, units="in")
+plot2+theme_light(10)+geom_boxplot(aes(x=Treatment, y=PropDaysPrey, fill=Treatment), colour="black")+theme(legend.position="NONE")+
+  scale_fill_manual(values=c("#65BADA", "#82BA4F"), guide=FALSE)+xlab("Treatment")+ylab("Proportion of Days\nwith Prey in Capture Web")+
+  annotate("text", x=1.5, y=0.9, label= "P = 0.004", size=2.5) 
+dev.off()
 #Figure3c--colony survival
-plot2+ theme_classic(15)+geom_bar(aes(x=Survival, y=..count.., fill=Treatment))+
-scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Colony Persistence")+ylab("Number of Colonies")+labs(fill="Spatial Context\nTreatment")
+survtable=ddply(surv, c("Survival", "Treatment"),summarize, col=length(Size))
+row=c("No", "Fence", 0)
+survtable2=rbind(row, survtable)
+survtable2$col=as.numeric(survtable2$col)
+survtable2$Survival=factor(survtable2$Survival, levels(survtable2$Survival)[c(2,1)])
+plot8=ggplot(survtable2)
+jpeg("fig3c.jpg", res=300, width=5, height=2.5, units="in")
+plot8+theme_light(10)+geom_bar(aes(x=Survival, y=col, fill=Treatment), colour="black", stat="identity", position="dodge")+
+scale_fill_manual(values=c("#65BADA", "#82BA4F"))+xlab("Colony Persistence")+ylab("Number of Colonies")+labs(fill="Spatial Context\nTreatment")+
+  theme(panel.grid.major.x = element_blank())+
+  annotate("text", x=2.3, y=26, label= "P < 0.0001", size=2.5)+
+  scale_x_discrete(labels = c("Persisted","Died/Disbanded"))
+dev.off()
+#plot2+ theme_classic(15)+geom_bar(aes(x=Survival, y=..count.., fill=Treatment), colour="black", position="dodge")+
+#scale_fill_manual(values=c("grey80", "#00A757"))+xlab("Colony Persistence")+ylab("Number of Colonies")+labs(fill="Spatial Context\nTreatment")
+
+
 #Figure 3b--number of individuals remaining  
 plot4=ggplot(survsub)
-plot4+theme_classic(15)+geom_boxplot(aes(x=Treatment, y=(FinalNumSpiders/InitialNumSpiders), fill=Treatment))+theme(legend.position="NONE")+
-  scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Treatment")+ylab("Proportion of Spiders Remaining")
-  
+jpeg("fig3b.jpg", res=300, width=2.5, height=2.5, units="in")
+plot4+theme_light(10)+geom_boxplot(aes(x=Treatment, y=(FinalNumSpiders/InitialNumSpiders), fill=Treatment))+theme(legend.position="NONE")+
+  scale_fill_manual(values=c("#65BADA", "#82BA4F"))+xlab("Treatment")+ylab("Proportion of Spiders Remaining")+
+  annotate("text", x=1.5, y=1.1, label= "P < 0.0001", size=2.5) 
+dev.off()  
+
 #Figure4a
-plot6=ggplot(survret)
-plot6+theme_classic(15)+geom_bar(aes(Size, ret, fill=Treatment), position="dodge", stat="identity")+
-  scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Colony Size")+ylab("Number of Retreat Nests")+
-  geom_errorbar(aes(x=c(0.75, 1.25, 1.75, 2.25), ymin=ret-retse, ymax=ret+retse), width=0.1)
+jpeg("fig4a.jpg", res=300, width=5, height=2.5, units="in")
+plot2+theme_light(10)+geom_histogram(aes(x=NumRetreats, fill=Treatment), position="dodge", binwidth=1, colour="black")+
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank(), panel.grid.major.y = )+
+  scale_fill_manual(values=c("#65BADA", "#82BA4F"))+
+  xlab("Number of Retreat Nests")+ylab("Number of Colonies")+labs(fill="Spatial Context\nTreatment")+
+  annotate("text", x=5.2, y=26, label= "P < 0.0001", size=2.5) 
+dev.off()  
+
+#plot6=ggplot(survret)
+#plot6+theme_light(15)+geom_bar(aes(Size, ret, fill=Treatment), position="dodge", stat="identity")+
+  #scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Colony Size")+ylab("Number of Retreat Nests")+
+  #geom_errorbar(aes(x=c(0.75, 1.25, 1.75, 2.25), ymin=ret-retse, ymax=ret+retse), width=0.1)
 
 #greenhouse 
-#Figure2a
+#Figure2c
 plot3=ggplot(ghsub)
-plot3+theme_classic(15)+geom_boxplot(aes(x=Treatment, y=Latency, fill=Treatment))+
-  scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Treatment")+ylab("Time to Attack (in s)")+
-  labs(fill="Spatial Context\nTreatment")
-#Figure2b
-plot3+theme_classic(15)+geom_boxplot(aes(x=Treatment, y=Number, fill=Treatment))+
-  scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Treatment")+ylab("Number of Attackers")+
-  labs(fill="Spatial Context\nTreatment")
+jpeg("fig2c.jpg", res=300, width=2.5, height=2.5, units="in")
+plot3+theme_light(10)+geom_boxplot(aes(x=Treatment, y=Latency, fill=Treatment))+
+  scale_fill_manual(values=c("#65BADA", "#82BA4F"), guide=FALSE)+xlab("Treatment")+ylab("Latency to Attack (in s)")+
+  labs(fill="Spatial Context\nTreatment")+
+  annotate("text", x=1.5, y=180, label= "P = 0.03", size=2.5) 
+dev.off()
+
+#Figure2d
+jpeg("fig2d.jpg", res=300, width=2.5, height=2.5, units="in")
+plot3+theme_light(10)+geom_boxplot(aes(x=Treatment, y=Number, fill=Treatment))+
+  scale_fill_manual(values=c("#65BADA", "#82BA4F"), guide=FALSE)+xlab("Treatment")+ylab("Number of Attackers")+
+  labs(fill="Spatial Context\nTreatment")+
+  annotate("text", x=1.5, y=10.75, label= "P = 0.0006", size=2.5) 
+dev.off()
 
 #Figure4b
 plot7=ggplot(ghfusion)
-plot7+theme_classic(15)+geom_bar(aes(x=Fused, y=..count.., fill=Treatment))+
-scale_fill_manual(values=c("#E5BA52", "#00A757"))+xlab("Emigration/Immigration")+ylab("Number of Colonies")+
-  labs(fill="Spatial Context\nTreatment")
+jpeg("fig4b.jpg", res=300, width=5, height=2.5, units="in")
+plot7+theme_light(10)+geom_bar(aes(x=Fused, y=..count.., fill=Treatment), position="dodge", colour="black")+
+scale_fill_manual(values=c("#65BADA", "#82BA4F"))+xlab("Emigration/Immigration")+ylab("Number of Colonies")+
+  labs(fill="Spatial Context\nTreatment")+theme(panel.grid.major.x = element_blank())+
+  annotate("text", x=2.3, y=18, label= "P = 0.0005", size=2.5) 
+dev.off()
 
 #STATISTICAL TESTS
 #colony level survival
